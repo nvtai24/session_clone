@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Threading;
 
 namespace SessionClone.MySession
 {
@@ -10,12 +11,14 @@ namespace SessionClone.MySession
         {
             get
             {
-                LoadAsync(CancellationToken.None).Wait();
+                //LoadAsync(CancellationToken.None).Wait();
+                Load();
 
                 return true;
             }
         }
 
+      
         public string Id => id;
 
         public IEnumerable<string> Keys => _store.Keys;
@@ -40,6 +43,18 @@ namespace SessionClone.MySession
                 _store[kvp.Key] = kvp.Value;
             }
         }
+
+        private void Load()
+        {
+            _store.Clear();
+            var loadedStore = storageEngine.Load(Id);
+
+            foreach (var kvp in loadedStore)
+            {
+                _store[kvp.Key] = kvp.Value;
+            }
+        }
+
 
         public void Remove(string key)
         {

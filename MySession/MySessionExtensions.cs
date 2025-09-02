@@ -6,21 +6,40 @@
 
         public static ISession GetSession(this HttpContext context)
         {
-            string? sessionId = context.Request.Cookies[SessionIdCookieName];
+            var sessionContainer = context.RequestServices.GetRequiredService<MySessionScopedContainer>();
 
-            if (IsSessionIdFormatValid(sessionId))
+            if (sessionContainer.Session != null)
             {
-                var session = context.RequestServices.GetRequiredService<IMySessionStorage>().Get(sessionId!);
-                context.Response.Cookies.Append(SessionIdCookieName, session.Id.ToString());
-
-                return session;
+                return sessionContainer.Session;
             }
             else
             {
-                var session = context.RequestServices.GetRequiredService<IMySessionStorage>().Create();
-                context.Response.Cookies.Append(SessionIdCookieName, session.Id.ToString());
+                string? sessionId = context.Request.Cookies[SessionIdCookieName];
 
-                return session;
+                if (IsSessionIdFormatValid(sessionId))
+                {
+                    var session = context.RequestServices.GetRequiredService<IMySessionStorage>().Get(sessionId!);
+                    context.Response.Cookies.Append(SessionIdCookieName, session.Id.ToString(), new CookieOptions()
+                    {
+                        HttpOnly = true,
+                    });
+
+                    sessionContainer.Session = session;
+
+                    return session;
+                }
+                else
+                {
+                    var session = context.RequestServices.GetRequiredService<IMySessionStorage>().Create();
+                    context.Response.Cookies.Append(SessionIdCookieName, session.Id.ToString(), new CookieOptions()
+                    {
+                        HttpOnly = true,
+                    });
+
+                    sessionContainer.Session = session;
+
+                    return session;
+                }
             }
         }
 
